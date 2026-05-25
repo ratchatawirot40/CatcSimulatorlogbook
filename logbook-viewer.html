@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Logbook Viewer · 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0b0d12;--surface:#13161f;--surface2:#1a1e2a;--surface3:#212638;
+  --border:#252c3e;--border2:#2e3650;
+  --accent:#4f8ef7;--accent-dim:rgba(79,142,247,.13);
+  --green:#34d399;--green-dim:rgba(52,211,153,.10);
+  --amber:#fbbf24;--amber-dim:rgba(251,191,36,.10);
+  --red:#f87171;--purple:#a78bfa;--cyan:#67e8f9;--cyan-dim:rgba(103,232,249,.10);
+  --text:#dde1ec;--text2:#7a8499;--text3:#404a60;
+  --font:'IBM Plex Sans Thai',sans-serif;--mono:'IBM Plex Mono',monospace;
+  --r:10px;--rsm:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;overflow-x:hidden}
+.topbar{position:sticky;top:0;z-index:200;background:rgba(11,13,18,.97);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;gap:12px}
+.tl{display:flex;align-items:center;gap:10px;min-width:0}
+.logo-ring{width:28px;height:28px;border-radius:8px;background:var(--cyan-dim);border:1px solid rgba(103,232,249,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);animation:blink 2.2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
+.main-title{font-size:14px;font-weight:600;letter-spacing:-.2px}
+.sub-title{font-size:10px;color:var(--text3);font-family:var(--mono)}
+.back-btn{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:5px 12px;cursor:pointer;text-decoration:none;transition:all .2s;white-space:nowrap;flex-shrink:0}
+.back-btn:hover{color:var(--cyan);border-color:rgba(103,232,249,.35)}
+.back-btn svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.tabbar{display:flex;overflow-x:auto;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:54px;z-index:100;scrollbar-width:none}
+.tabbar::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:11px 15px;font-size:11.5px;font-weight:500;font-family:var(--mono);color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .18s;white-space:nowrap;user-select:none;letter-spacing:.3px}
+.tab:hover{color:var(--text2)}
+.tab.active{color:var(--cyan);border-bottom-color:var(--cyan);background:rgba(103,232,249,.04)}
+.tab.t-summary.active{color:var(--amber);border-bottom-color:var(--amber);background:rgba(251,191,36,.04)}
+.main{padding:0 0 100px}
+.state-box{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:64px 20px;text-align:center}
+.spinner{width:26px;height:26px;border:2px solid var(--border2);border-top-color:var(--cyan);border-radius:50%;animation:spin .65s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.state-msg{font-size:13px;color:var(--text2)}
+.retry-btn{background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:var(--rsm);padding:8px 18px;font-size:12px;cursor:pointer;font-family:var(--font);transition:all .2s}
+.retry-btn:hover{border-color:var(--accent);color:var(--accent)}
+.sum-hero{padding:16px 14px 10px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hero-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.hc-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:5px}
+.hc-val{font-family:var(--mono);font-size:26px;font-weight:600;letter-spacing:-1.5px;color:var(--amber)}
+.hc-val.cyan{color:var(--cyan)}
+.hc-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.ac-section{padding:0 14px 14px}
+.sec-title{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text3);margin:14px 0 8px}
+.ac-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.ac-row{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:10px;transition:background .15s}
+.ac-row:last-child{border-bottom:none}
+.ac-row:hover{background:rgba(255,255,255,.02)}
+.ac-reg{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);min-width:72px;flex-shrink:0}
+.ac-type{font-size:11px;color:var(--text3);flex:1}
+.ac-bar-wrap{width:90px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;flex-shrink:0}
+.ac-bar{height:100%;border-radius:2px;background:var(--accent);transition:width .7s cubic-bezier(.4,0,.2,1)}
+.ac-time{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--green);min-width:58px;text-align:right;flex-shrink:0}
+.month-bars{display:flex;align-items:flex-end;gap:5px;height:80px;padding:4px 8px 6px}
+.mb-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+.mb-bar-wrap{flex:1;width:100%;display:flex;align-items:flex-end}
+.mb-bar{width:100%;border-radius:3px 3px 0 0;background:var(--surface3);min-height:2px;transition:height .5s ease}
+.mb-bar.has-data{background:linear-gradient(180deg,var(--cyan) 0%,var(--accent) 100%)}
+.mb-label{font-size:9px;font-family:var(--mono);color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:clip;max-width:100%;text-align:center}
+.mb-val{font-size:8.5px;font-family:var(--mono);color:var(--text2);text-align:center;white-space:nowrap}
+.month-hdr{padding:12px 14px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--border)}
+.mh-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mh-title{font-size:14px;font-weight:600;color:var(--cyan)}
+.mh-badge{font-size:11px;font-family:var(--mono);color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:2px 9px}
+.mh-total{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--green)}
+.refresh-btn{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);background:none;border:1px solid var(--border);border-radius:12px;padding:4px 10px;cursor:pointer;font-family:var(--mono);transition:all .2s;flex-shrink:0}
+.refresh-btn:hover{color:var(--cyan);border-color:rgba(103,232,249,.35)}
+.refresh-btn svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round}
+.spinning{animation:spin .65s linear infinite}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.logbook-tbl{width:100%;border-collapse:collapse;font-size:12px;min-width:680px}
+.logbook-tbl th{text-align:left;padding:9px 10px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);background:var(--surface);white-space:nowrap}
+.logbook-tbl td{padding:10px 10px;border-bottom:1px solid rgba(37,44,62,.7);vertical-align:middle;white-space:nowrap}
+.logbook-tbl tr:last-child td{border-bottom:none}
+.logbook-tbl tr:hover td{background:rgba(255,255,255,.02)}
+.c-num{color:var(--text3);font-size:10px;font-family:var(--mono)}
+.c-date{font-size:11px;color:var(--text2);font-family:var(--mono)}
+.c-pilot{display:flex;align-items:center;gap:7px}
+.avatar{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;flex-shrink:0;letter-spacing:.5px}
+.av0{background:rgba(79,142,247,.15);color:var(--accent)}
+.av1{background:rgba(52,211,153,.15);color:var(--green)}
+.av2{background:rgba(251,191,36,.15);color:var(--amber)}
+.av3{background:rgba(167,139,250,.15);color:var(--purple)}
+.av4{background:rgba(103,232,249,.15);color:var(--cyan)}
+.pilot-name{font-size:12px;font-weight:500;max-width:130px;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.ac-reg2{font-size:11px;font-weight:600;color:var(--accent)}
+.ac-type2{font-size:9.5px;color:var(--text3)}
+.c-lesson{color:var(--purple);font-weight:600;font-family:var(--mono);font-size:11px}
+.c-instr{color:var(--amber);font-size:11px}
+.c-time{font-family:var(--mono);font-size:12px;color:var(--text2)}
+.c-total{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--green)}
+.c-route{font-family:var(--mono);font-size:10.5px;color:var(--cyan);max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.c-num-small{font-family:var(--mono);font-size:11px;color:var(--text2);text-align:center;min-width:28px}
+.c-batch{font-family:var(--mono);font-size:10px;color:var(--text3)}
+.empty-state{display:flex;flex-direction:column;align-items:center;gap:10px;padding:48px 20px;color:var(--text3);font-size:13px;text-align:center}
+.upd-row{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.01)}
+.upd-text{font-size:10px;color:var(--text3);font-family:var(--mono)}
+.live-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--green);margin-right:5px;vertical-align:middle;animation:blink 1.8s ease-in-out infinite}
+.total-row td{background:rgba(52,211,153,.05)!important;border-top:1px solid rgba(52,211,153,.15)!important}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="tl">
+    <div class="logo-ring"><div class="logo-dot"></div></div>
+    <div>
+      <div class="main-title">Logbook Viewer</div>
+      <div class="sub-title">SimulatorLogbook_2026 · READ ONLY</div>
+    </div>
+  </div>
+  <a class="back-btn" href="index.html">
+    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    กลับ
+  </a>
+</div>
+
+<div class="tabbar" id="tabbar">
+  <div class="tab t-summary active" onclick="switchTab(this,'SUMMARY')">SUMMARY</div>
+  <div class="tab" onclick="switchTab(this,'Jan_2026')">Jan</div>
+  <div class="tab" onclick="switchTab(this,'Feb_2026')">Feb</div>
+  <div class="tab" onclick="switchTab(this,'Mar_2026')">Mar</div>
+  <div class="tab" onclick="switchTab(this,'Apr_2026')">Apr</div>
+  <div class="tab" onclick="switchTab(this,'May_2026')">May</div>
+  <div class="tab" onclick="switchTab(this,'Jun_2026')">Jun</div>
+  <div class="tab" onclick="switchTab(this,'Jul_2026')">Jul</div>
+  <div class="tab" onclick="switchTab(this,'Aug_2026')">Aug</div>
+  <div class="tab" onclick="switchTab(this,'Sep_2026')">Sep</div>
+  <div class="tab" onclick="switchTab(this,'Oct_2026')">Oct</div>
+  <div class="tab" onclick="switchTab(this,'Nov_2026')">Nov</div>
+  <div class="tab" onclick="switchTab(this,'Dec_2026')">Dec</div>
+</div>
+
+<div class="main" id="main"></div>
+
+<script>
+const SHEET_ID = '1kUGrmB3eXew-ZMB2g0HzqJMpcmsq1n19k9qU4_c0QNY';
+const BASE_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq';
+const AV = ['av0','av1','av2','av3','av4'];
+const C = {TS:0,NAME:1,AC:2,DATE:3,START:4,STOP:5,LESSON:6,INSTR:7,BATCH:8,CONTACT:9,TO:10,LDG:11,APP:12,ROUTE:13,TOTAL:14};
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const cache = {};
+let currentSheet = 'SUMMARY';
+let cbCounter = 0;
+
+function switchTab(el, sheetName) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  el.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});
+  currentSheet = sheetName;
+  loadAndRender(sheetName);
+}
+
+function fetchSheet(sheetName) {
+  return new Promise((resolve, reject) => {
+    if (cache[sheetName]) { resolve(cache[sheetName]); return; }
+    cbCounter++;
+    const cb = '_gviz_cb_' + Date.now() + '_' + cbCounter;
+    const url = BASE_URL + '?tqx=out:json;responseHandler:' + cb + '&sheet=' + encodeURIComponent(sheetName);
+    const timer = setTimeout(() => { delete window[cb]; reject(new Error('หมดเวลา — ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต')); }, 20000);
+    window[cb] = function(data) {
+      clearTimeout(timer);
+      delete window[cb];
+      try {
+        var rows = (data.table.rows || []).map(function(r) {
+          return (r.c || []).map(function(cell) {
+            if (!cell) return '';
+            if (cell.f != null) return cell.f;
+            if (cell.v != null) return String(cell.v);
+            return '';
+          });
+        });
+        cache[sheetName] = rows;
+        resolve(rows);
+      } catch(e) { reject(new Error('อ่านข้อมูลไม่ได้: ' + e.message)); }
+    };
+    const s = document.createElement('script');
+    s.src = url;
+    s.onerror = function() { clearTimeout(timer); delete window[cb]; reject(new Error('โหลดไม่ได้ — ตรวจสอบว่า Sheet เปิดสาธารณะแล้ว')); };
+    document.head.appendChild(s);
+    setTimeout(function(){ try{s.remove();}catch(e){} }, 22000);
+  });
+}
+
+var mainEl = document.getElementById('main');
+
+function showLoading() {
+  mainEl.innerHTML = '<div class="state-box"><div class="spinner"></div><div class="state-msg">กำลังโหลดข้อมูลจาก Google Sheets...</div></div>';
+}
+function showError(msg, sheet) {
+  mainEl.innerHTML = '<div class="state-box"><div style="font-size:30px">⚠️</div><div class="state-msg" style="color:var(--red)">' + msg + '</div><button class="retry-btn" onclick="loadAndRender(\'' + sheet + '\',true)">ลองใหม่</button></div>';
+}
+function nowStr() {
+  var d = new Date();
+  return d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+function parseTime(s) {
+  if (!s) return 0;
+  var m = String(s).match(/^(\d+):(\d+)/);
+  return m ? parseInt(m[1])*60 + parseInt(m[2]) : 0;
+}
+function fmtHM(mins) {
+  if (!mins) return '0:00';
+  return Math.floor(mins/60) + ':' + String(mins%60).padStart(2,'0');
+}
+function acReg(v) { return (v||'').split('_')[0] || v; }
+function acType(v) { var p=(v||'').split('_'); return p.slice(1).join(' '); }
+function getInitials(name) {
+  return (name||'').split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase() || '?';
+}
+function getAv(name) {
+  var h=0; for(var i=0;i<(name||'').length;i++) h=(h*31+name.charCodeAt(i))&0xffff;
+  return AV[h%AV.length];
+}
+function dataRows(rows) {
+  return rows.filter(function(r) {
+    var ts = String(r[0]||'').trim().toLowerCase();
+    var nm = String(r[1]||'').trim().toLowerCase();
+    if (!ts || !nm) return false;
+    if (ts.startsWith('timestamp') || ts.includes('simulator logbook') || ts.includes('รวม')) return false;
+    if (nm.includes('รวม') || nm.includes('total') || nm === 'ชื่อนักบิน') return false;
+    return true;
+  });
+}
+
+async function loadAndRender(sheetName, force) {
+  if (force) delete cache[sheetName];
+  showLoading();
+  try {
+    var rows = await fetchSheet(sheetName);
+    if (sheetName === 'SUMMARY') renderSummary(rows);
+    else renderMonth(sheetName, rows);
+  } catch(e) { showError(e.message, sheetName); }
+}
+
+function renderSummary(rawRows) {
+  // Find header row index
+  var hIdx = -1;
+  for (var i=0; i<rawRows.length; i++) {
+    var cell = String(rawRows[i][0]||'').toLowerCase();
+    if (cell === 'simulator') { hIdx = i; break; }
+  }
+
+  var acRows = [], totalRow = null;
+  if (hIdx >= 0) {
+    for (var i=hIdx+1; i<rawRows.length; i++) {
+      var r = rawRows[i];
+      var name = String(r[0]||'').trim();
+      if (!name) continue;
+      if (name.toLowerCase().includes('รวม')) totalRow = r;
+      else acRows.push(r);
+    }
+  }
+
+  var grandMins = totalRow ? parseTime(String(totalRow[totalRow.length-1]||'')) : 0;
+  var monthMins = MONTHS.map(function(_,mi){ return totalRow ? parseTime(String(totalRow[mi+1]||'')) : 0; });
+  var maxMins = Math.max.apply(null, monthMins.concat([1]));
+  var activeMonths = monthMins.filter(function(m){ return m>0; }).length;
+  var acMaxMins = acRows.length ? Math.max.apply(null, acRows.map(function(r){ return parseTime(String(r[r.length-1]||'')); }).concat([1])) : 1;
+
+  var html = '<div class="upd-row"><span class="upd-text"><span class="live-dot"></span>ดึงข้อมูลล่าสุด: ' + nowStr() + '</span></div>';
+
+  // Hero
+  html += '<div class="sum-hero">';
+  html += '<div class="hero-card"><div class="hc-label">ชั่วโมงรวม 2026</div><div class="hc-val">' + fmtHM(grandMins) + '</div><div class="hc-sub">ชั่วโมง:นาที</div></div>';
+  html += '<div class="hero-card"><div class="hc-label">เดือนที่มีการบิน</div><div class="hc-val cyan">' + activeMonths + '</div><div class="hc-sub">จาก 12 เดือน</div></div>';
+  html += '</div>';
+
+  // Bar chart
+  html += '<div class="ac-section"><div class="sec-title">ชั่วโมงบินรายเดือน</div>';
+  html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 10px 8px">';
+  html += '<div class="month-bars">';
+  MONTHS.forEach(function(m, mi) {
+    var mins = monthMins[mi];
+    var pct = Math.round((mins/maxMins)*100);
+    var hasData = mins > 0;
+    html += '<div class="mb-col">';
+    html += '<div class="mb-val">' + (hasData ? fmtHM(mins) : '') + '</div>';
+    html += '<div class="mb-bar-wrap"><div class="mb-bar ' + (hasData?'has-data':'') + '" style="height:' + Math.max(pct, hasData?5:2) + '%"></div></div>';
+    html += '<div class="mb-label">' + m + '</div>';
+    html += '</div>';
+  });
+  html += '</div></div></div>';
+
+  // AC breakdown
+  html += '<div class="ac-section"><div class="sec-title">ชั่วโมงบินแยก Aircraft</div><div class="ac-card">';
+  acRows.forEach(function(r) {
+    var full = String(r[0]||'');
+    var reg = acReg(full), typ = acType(full);
+    var totalM = parseTime(String(r[r.length-1]||''));
+    var pct = Math.round((totalM/acMaxMins)*100);
+    html += '<div class="ac-row">';
+    html += '<span class="ac-reg">' + reg + '</span>';
+    html += '<span class="ac-type">' + typ + '</span>';
+    html += '<div class="ac-bar-wrap"><div class="ac-bar" style="width:' + pct + '%"></div></div>';
+    html += '<span class="ac-time">' + (totalM>0?fmtHM(totalM):'—') + '</span>';
+    html += '</div>';
+  });
+  html += '</div></div>';
+
+  // Summary table
+  html += '<div class="ac-section"><div class="sec-title">ตารางสรุปรายเดือน</div>';
+  html += '<div class="ac-card" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:560px">';
+  html += '<thead><tr><th style="padding:9px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);white-space:nowrap">Aircraft</th>';
+  MONTHS.forEach(function(m){ html += '<th style="padding:9px 5px;text-align:center;font-size:10px;font-weight:700;color:var(--text3);border-bottom:1px solid var(--border);font-family:var(--mono)">' + m + '</th>'; });
+  html += '<th style="padding:9px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--amber);border-bottom:1px solid var(--border);white-space:nowrap;font-family:var(--mono)">Total</th></tr></thead><tbody>';
+  acRows.forEach(function(r) {
+    var full = String(r[0]||'');
+    var reg = acReg(full), typ = acType(full);
+    var grandM = parseTime(String(r[r.length-1]||''));
+    html += '<tr><td style="padding:9px 10px;border-bottom:1px solid rgba(37,44,62,.7)"><div style="font-size:12px;font-weight:600;color:var(--accent);font-family:var(--mono)">' + reg + '</div><div style="font-size:10px;color:var(--text3)">' + typ + '</div></td>';
+    MONTHS.forEach(function(_,mi) {
+      var m = parseTime(String(r[mi+1]||''));
+      html += '<td style="padding:9px 5px;border-bottom:1px solid rgba(37,44,62,.7);text-align:center;font-family:var(--mono);font-size:11px;color:' + (m>0?'var(--green)':'var(--text3)') + '">' + (m>0?fmtHM(m):'—') + '</td>';
+    });
+    html += '<td style="padding:9px 10px;border-bottom:1px solid rgba(37,44,62,.7);text-align:right;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--amber)">' + (grandM>0?fmtHM(grandM):'—') + '</td></tr>';
+  });
+  if (totalRow) {
+    html += '<tr class="total-row"><td style="padding:10px 10px;font-size:12px;font-weight:600;color:var(--green)">รวมทั้งหมด</td>';
+    MONTHS.forEach(function(_,mi) {
+      var m = parseTime(String(totalRow[mi+1]||''));
+      html += '<td style="padding:10px 5px;text-align:center;font-family:var(--mono);font-size:11px;font-weight:600;color:' + (m>0?'var(--green)':'var(--text3)') + '">' + (m>0?fmtHM(m):'—') + '</td>';
+    });
+    html += '<td style="padding:10px 10px;text-align:right;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber)">' + fmtHM(grandMins) + '</td></tr>';
+  }
+  html += '</tbody></table></div></div>';
+
+  mainEl.innerHTML = html;
+
+  // Animate bars
+  requestAnimationFrame(function() {
+    document.querySelectorAll('.ac-bar').forEach(function(b) {
+      var w = b.style.width; b.style.width = '0';
+      requestAnimationFrame(function(){ b.style.width = w; });
+    });
+  });
+}
+
+function renderMonth(sheetName, rawRows) {
+  var monthLabel = sheetName.replace('_',' ');
+  var rows = dataRows(rawRows);
+  var totalMins = 0;
+  rows.forEach(function(r){ totalMins += parseTime(String(r[C.TOTAL]||'')); });
+
+  var html = '<div class="month-hdr"><div class="mh-left">';
+  html += '<span class="mh-title">' + monthLabel + '</span>';
+  html += '<span class="mh-badge">' + rows.length + ' flights</span>';
+  if (totalMins>0) html += '<span class="mh-total">⏱ ' + fmtHM(totalMins) + ' ชม.</span>';
+  html += '</div><button class="refresh-btn" onclick="refreshTab(\'' + sheetName + '\',this)"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Refresh</button></div>';
+  html += '<div class="upd-row"><span class="upd-text"><span class="live-dot"></span>ดึงข้อมูล: ' + nowStr() + '</span></div>';
+
+  if (rows.length === 0) {
+    html += '<div class="empty-state"><div style="font-size:32px;opacity:.35">🛫</div>ยังไม่มีข้อมูลใน ' + monthLabel + '</div>';
+  } else {
+    html += '<div class="tbl-wrap"><table class="logbook-tbl"><thead><tr>';
+    html += '<th>#</th><th>วันที่</th><th style="min-width:155px">ชื่อนักบิน</th><th>Aircraft</th><th>Lesson</th><th>Instructor</th><th>เริ่ม</th><th>สิ้นสุด</th><th>รวม</th><th>TO</th><th>LDG</th><th>APP</th><th>Route</th><th>Batch</th>';
+    html += '</tr></thead><tbody>';
+    rows.forEach(function(r, i) {
+      var name   = String(r[C.NAME]||'').trim();
+      var acFull = String(r[C.AC]||'').trim();
+      var date   = String(r[C.DATE]||'').trim();
+      var start  = String(r[C.START]||'').trim().substring(0,5);
+      var stop   = String(r[C.STOP]||'').trim().substring(0,5);
+      var lesson = String(r[C.LESSON]||'').trim();
+      var instr  = String(r[C.INSTR]||'').trim();
+      var total  = String(r[C.TOTAL]||'').trim().substring(0,5);
+      var to     = String(r[C.TO]||'-').trim();
+      var ldg    = String(r[C.LDG]||'-').trim();
+      var app    = String(r[C.APP]||'-').trim();
+      var route  = String(r[C.ROUTE]||'-').trim();
+      var batch  = String(r[C.BATCH]||'-').trim();
+      var reg    = acReg(acFull), typ = acType(acFull);
+      var ini    = getInitials(name), av = getAv(name);
+      html += '<tr>';
+      html += '<td class="c-num">' + (i+1) + '</td>';
+      html += '<td class="c-date">' + date + '</td>';
+      html += '<td><div class="c-pilot"><div class="avatar ' + av + '">' + ini + '</div><span class="pilot-name" title="' + name + '">' + name + '</span></div></td>';
+      html += '<td><div class="ac-reg2">' + reg + '</div><div class="ac-type2">' + typ + '</div></td>';
+      html += '<td class="c-lesson">' + lesson + '</td>';
+      html += '<td class="c-instr">' + instr + '</td>';
+      html += '<td class="c-time">' + start + '</td>';
+      html += '<td class="c-time">' + stop + '</td>';
+      html += '<td class="c-total">' + total + '</td>';
+      html += '<td class="c-num-small">' + to + '</td>';
+      html += '<td class="c-num-small">' + ldg + '</td>';
+      html += '<td class="c-num-small">' + app + '</td>';
+      html += '<td class="c-route" title="' + route + '">' + route + '</td>';
+      html += '<td class="c-batch">' + batch + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+  mainEl.innerHTML = html;
+}
+
+function refreshTab(sheetName, btn) {
+  var icon = btn.querySelector('svg');
+  if (icon) icon.classList.add('spinning');
+  delete cache[sheetName];
+  fetchSheet(sheetName)
+    .then(function(rows) {
+      if (sheetName === 'SUMMARY') renderSummary(rows);
+      else renderMonth(sheetName, rows);
+    })
+    .catch(function(e){ showError(e.message, sheetName); })
+    .finally(function(){ if(icon) icon.classList.remove('spinning'); });
+}
+
+// Init
+loadAndRender('SUMMARY');
+</script>
+</body>
+</html>
